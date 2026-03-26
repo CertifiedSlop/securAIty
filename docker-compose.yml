@@ -1,0 +1,178 @@
+services:
+  natss:
+    image: nats:2.10-alpine
+    container_name: securAIty-natss
+    command:
+      - -c
+      - /etc/nats/nats.conf
+      - -js
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - ./docker/natss/nats.conf:/etc/nats/nats.conf:ro
+      - natss_data:/data/nats
+    networks:
+      - securAIty_internal
+    healthcheck:
+      test: ["CMD", "nats-server", "-sl", "ldm=/var/run/nats/nats.pid"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    user: "1000:1000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: securAIty-postgres
+    environment:
+      POSTGRES_USER: security_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: security_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - securAIty_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U security_user -d security_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+      - /run:noexec,nosuid,size=16m
+    user: "999:999"
+    secrets:
+      - postgres_password
+
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: securAIty-vault
+    command: server -config=/etc/vault/vault.hcl
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID_FILE: /run/secrets/vault_root_token
+      VAULT_ADDR: http://0.0.0.0:8200
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./docker/vault/vault.hcl:/etc/vault/vault.hcl:ro
+      - vault_data:/vault/data
+    networks:
+      - securAIty_internal
+    healthcheck:
+      test: ["CMD", "vault", "status", "-format=json"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    user: "100:1000"
+    secrets:
+      - vault_root_token
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+      target: production
+    container_name: securAIty-app
+    environment:
+      APP_NAME: securAIty
+      APP_ENV: production
+      LOG_LEVEL: INFO
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      DATABASE_URL: postgresql://security_user:$(cat /run/secrets/postgres_password)@postgres:5432/security_db
+      NATS_URL: nats://natss:4222
+      NATS_CLUSTER_ID: security-cluster
+      NATS_CLIENT_ID: security-manager
+      VAULT_URL: http://vault:8200
+      VAULT_TOKEN_FILE: /run/secrets/vault_root_token
+      VAULT_SECRET_PATH: secret/security
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_storage:/tmp/securAIty-storage
+    networks:
+      - securAIty_internal
+    depends_on:
+      natss:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      vault:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=128m
+    user: "1000:1000"
+    secrets:
+      - postgres_password
+      - vault_root_token
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.5"
+
+networks:
+  securAIty_internal:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  natss_data:
+    driver: local
+    name: securAIty-natss-data
+  postgres_data:
+    driver: local
+    name: securAIty-postgres-data
+  vault_data:
+    driver: local
+    name: securAIty-vault-data
+  app_storage:
+    driver: local
+    name: securAIty-app-storage
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  vault_root_token:
+    file: ./secrets/vault_root_token.txt
