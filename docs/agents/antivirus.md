@@ -1,5 +1,7 @@
 # Antivirus Agent
 
+**Author:** CertifiedSlop
+
 **Agent Type:** `antivirus`  
 **Version:** 2.0.0  
 **Status:** Production Ready
@@ -872,3 +874,7 @@ ScanArchive yes
 - Initial release
 - Basic file scanning with YARA
 - Quarantine functionality
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

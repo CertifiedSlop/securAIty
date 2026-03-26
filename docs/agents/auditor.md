@@ -1,5 +1,7 @@
 # Compliance Auditor Agent
 
+**Author:** CertifiedSlop
+
 **Agent Type:** `auditor`  
 **Version:** 2.0.0  
 **Status:** Production Ready
@@ -894,3 +896,7 @@ auditor:
 - Initial release
 - SOC 2 compliance auditing
 - Basic control assessment
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

@@ -1,5 +1,7 @@
 # Threat Analysis Agent
 
+**Author:** CertifiedSlop
+
 **Agent Type:** `analyst`  
 **Version:** 2.0.0  
 **Status:** Production Ready
@@ -681,3 +683,7 @@ docker logs --tail 1000 securAIty-agent-analyst-1 | grep DEBUG
 - Initial release
 - Event triage and classification
 - Incident investigation workflows
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

@@ -1,5 +1,7 @@
 # Incident Response Runbook
 
+**Author:** CertifiedSlop
+
 **Purpose**: Procedures for responding to security incidents detected by securAIty.
 
 **Audience**: Security team, SOC analysts, incident responders, on-call engineers
@@ -615,3 +617,7 @@ Notes: {Additional observations}
 **Document Version**: 1.0  
 **Maintained By**: securAIty Security Team  
 **Review Cycle**: Quarterly
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

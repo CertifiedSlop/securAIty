@@ -1,5 +1,7 @@
 # Authentication Guide
 
+**Author:** CertifiedSlop
+
 Comprehensive guide to securAIty authentication, authorization, and token management.
 
 ## Overview
@@ -564,3 +566,7 @@ vault kv put secret/jwt/public key=@public.pem
 - [API Overview](overview.md) - Architecture and error handling
 - [Endpoints Reference](endpoints.md) - Authentication endpoints
 - [Schemas Reference](schemas.md) - Token and auth schemas
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

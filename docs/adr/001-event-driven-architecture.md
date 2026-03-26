@@ -1,5 +1,7 @@
 # ADR-001: Event-Driven Architecture with NATS
 
+**Author:** CertifiedSlop
+
 ## Status
 
 Accepted
@@ -7,6 +9,10 @@ Accepted
 ## Date
 
 2026-03-26
+
+## Author
+
+CertifiedSlop
 
 ## Context
 
@@ -192,3 +198,7 @@ This decision supports the following compliance requirements:
 - [ADR-002: Agent Communication Patterns](002-agent-communication-patterns.md)
 - [ADR-003: Security Model](003-security-model.md)
 - [ADR-005: Python Async Design](005-python-async-design.md)
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

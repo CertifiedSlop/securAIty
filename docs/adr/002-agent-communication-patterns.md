@@ -1,5 +1,7 @@
 # ADR-002: Agent Communication Patterns
 
+**Author:** CertifiedSlop
+
 ## Status
 
 Accepted
@@ -323,3 +325,7 @@ async with breaker.context():
 - [ADR-001: Event-Driven Architecture](001-event-driven-architecture.md)
 - [ADR-003: Security Model](003-security-model.md)
 - [ADR-005: Python Async Design](005-python-async-design.md)
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

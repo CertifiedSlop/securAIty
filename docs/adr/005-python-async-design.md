@@ -1,5 +1,7 @@
 # ADR-005: Python Async/Await Design
 
+**Author:** CertifiedSlop
+
 ## Status
 
 Accepted
@@ -497,3 +499,7 @@ except SpecificError as e:  # ✅ Specific
 - [ADR-001: Event-Driven Architecture](001-event-driven-architecture.md)
 - [ADR-002: Agent Communication Patterns](002-agent-communication-patterns.md)
 - [ADR-004: Storage Pattern](004-storage-pattern.md)
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

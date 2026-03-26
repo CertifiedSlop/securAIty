@@ -1,5 +1,7 @@
 # Security Hardening Runbook
 
+**Author:** CertifiedSlop
+
 **Purpose**: Security hardening checklist and procedures for securAIty platform.
 
 **Audience**: Security engineers, DevOps team, compliance officers
@@ -644,3 +646,7 @@ processors:
 **Maintained By**: securAIty Security Team  
 **Review Cycle**: Quarterly  
 **Next Review**: 2026-06-26
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

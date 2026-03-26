@@ -2,6 +2,8 @@
 
 **AI-Powered Security Management System**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Overview
 
 securAIty is an advanced security management platform that leverages multiple specialized AI agents to provide comprehensive cybersecurity operations. The system orchestrates autonomous agents for antivirus operations, penetration testing, security analysis, engineering tasks, and auditing.
@@ -70,7 +72,7 @@ securAIty/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/securAIty.git
+git clone https://github.com/CertifiedSlop/securAIty.git
 cd securAIty
 
 # Create virtual environment
@@ -151,10 +153,15 @@ See [SECURITY.md](SECURITY.md) for the complete security policy.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/your-org/securAIty/issues
+- GitHub Issues: https://github.com/CertifiedSlop/securAIty/issues
 - Security reports: See [SECURITY.md](SECURITY.md)
+- Discussions: https://github.com/CertifiedSlop/securAIty/discussions
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

@@ -4,6 +4,7 @@
 
 **Audience**: DevOps engineers, system administrators
 
+**Author:** CertifiedSlop
 **Last Updated**: 2026-03-26
 
 ---
@@ -543,3 +544,7 @@ docker compose exec postgres pg_restore -U securAIty -d securAIty /backups/backu
 
 **Document Version**: 1.0  
 **Maintained By**: securAIty DevOps Team
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

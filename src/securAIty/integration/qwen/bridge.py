@@ -1,17 +1,32 @@
 """
 Qwen Subagent Bridge
 
-Integration bridge for delegating tasks to Qwen LLM subagents
+Integration bridge for delegating tasks to LLM subagents
 with context management and response processing.
+
+This module now uses the unified LLM provider abstraction layer
+for multi-provider support (Ollama, OpenRouter, Gemini, ChatGPT).
 """
 
 import asyncio
 import json
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from ...agents.base import AgentConfig, BaseAgent
 from ...events.correlation import CorrelationContext
+from ..llm import (
+    LLMClient,
+    LLMClientConfig,
+    LLMMessage,
+    LLMProvider,
+    LLMProviderFactory,
+    LLMResponse,
+    OllamaConfig,
+    OllamaProvider,
+    RetryConfig,
+)
 
 
 @dataclass
@@ -20,22 +35,64 @@ class QwenBridgeConfig:
     Configuration for Qwen bridge connection.
 
     Attributes:
-        api_endpoint: Qwen API endpoint URL
+        api_endpoint: LLM API endpoint URL
         api_key: API authentication key
         model: Model identifier to use
         max_tokens: Maximum response tokens
         temperature: Response temperature
         timeout: Request timeout in seconds
-        retry_attempts: Number of retry attempts
+        retry_attempts: Number of retry attempts (deprecated, use retry_config)
+        provider: Provider type (ollama, openrouter, gemini, chatgpt)
+        enable_retry: Enable persistent retry (default: True, unlimited)
+        max_retries: Maximum retry attempts (-1 for unlimited)
+        retry_base_delay: Base delay for retry in seconds
+        retry_max_delay: Maximum delay for retry in seconds
+        retry_jitter: Enable jitter for retry
     """
 
     api_endpoint: str = "http://localhost:11434"
     api_key: Optional[str] = None
-    model: str = "qwen-72b"
+    model: str = "qwen2.5:72b"
     max_tokens: int = 4096
     temperature: float = 0.7
     timeout: float = 60.0
     retry_attempts: int = 3
+    provider: str = "ollama"
+    enable_retry: bool = True
+    max_retries: int = -1
+    retry_base_delay: float = 1.0
+    retry_max_delay: float = 60.0
+    retry_jitter: bool = True
+
+    def to_llm_config(self) -> OllamaConfig:
+        """Convert to LLM provider configuration."""
+        return OllamaConfig(
+            api_base=self.api_endpoint,
+            api_key=self.api_key,
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            timeout=self.timeout,
+            retry_attempts=self.retry_attempts,
+        )
+
+    def to_retry_config(self) -> RetryConfig:
+        """Convert to retry configuration."""
+        return RetryConfig(
+            max_retries=self.max_retries,
+            base_delay=self.retry_base_delay,
+            max_delay=self.retry_max_delay,
+            jitter=self.retry_jitter,
+        )
+
+    def to_client_config(self) -> LLMClientConfig:
+        """Convert to full LLM client configuration."""
+        return LLMClientConfig(
+            provider_config=self.to_llm_config(),
+            retry_config=self.to_retry_config(),
+            enable_retry=self.enable_retry,
+            enable_circuit_breaker=False,
+        )
 
 
 @dataclass
@@ -51,12 +108,16 @@ class QwenMessage:
     role: str
     content: str
 
+    def to_llm_message(self) -> LLMMessage:
+        """Convert to LLMMessage."""
+        return LLMMessage(role=self.role, content=self.content)
+
 
 class QwenSubAgent:
     """
     Qwen-powered subagent for delegated tasks.
 
-    Wraps Qwen LLM capabilities for security analysis,
+    Wraps LLM provider capabilities for security analysis,
     threat intelligence, and decision support.
 
     Attributes:
@@ -88,6 +149,8 @@ class QwenSubAgent:
         ]
         self._conversation_history: list[QwenMessage] = []
         self._is_connected = False
+        self._client: Optional[LLMClient] = None
+        self._provider: Optional[LLMProvider] = None
 
     @property
     def capabilities(self) -> list[dict[str, Any]]:
@@ -96,12 +159,16 @@ class QwenSubAgent:
 
     async def connect(self) -> bool:
         """
-        Establish connection to Qwen service.
+        Establish connection to LLM service.
 
         Returns:
             True if connected successfully
         """
         try:
+            client_config = self.config.to_client_config()
+            self._client = LLMClient(client_config=client_config)
+            await self._client.connect()
+
             self._is_connected = True
             self._conversation_history = [
                 QwenMessage(
@@ -115,7 +182,9 @@ class QwenSubAgent:
             return False
 
     async def disconnect(self) -> None:
-        """Disconnect from Qwen service."""
+        """Disconnect from LLM service."""
+        if self._client:
+            await self._client.disconnect()
         self._is_connected = False
         self._conversation_history.clear()
 
@@ -126,7 +195,7 @@ class QwenSubAgent:
         correlation_context: Optional[CorrelationContext] = None,
     ) -> dict[str, Any]:
         """
-        Execute task using Qwen.
+        Execute task using LLM.
 
         Args:
             input_data: Task input data
@@ -134,7 +203,7 @@ class QwenSubAgent:
             correlation_context: Correlation tracking
 
         Returns:
-            Qwen response processed as dictionary
+            LLM response processed as dictionary
 
         Raises:
             RuntimeError: If not connected
@@ -146,10 +215,10 @@ class QwenSubAgent:
 
         self._conversation_history.append(QwenMessage(role="user", content=prompt))
 
-        response = await self._call_qwen(correlation_context)
+        response = await self._call_llm(correlation_context)
 
         self._conversation_history.append(
-            QwenMessage(role="assistant", content=response.get("content", ""))
+            QwenMessage(role="assistant", content=response.content)
         )
 
         return self._parse_response(response, input_data)
@@ -191,132 +260,60 @@ class QwenSubAgent:
 
         return "\n\n".join(prompt_sections)
 
-    async def _call_qwen(
+    async def _call_llm(
         self,
         correlation_context: Optional[CorrelationContext],
-    ) -> dict[str, Any]:
+    ) -> LLMResponse:
         """
-        Call Qwen API.
+        Call LLM provider.
 
         Args:
             correlation_context: Correlation tracking
 
         Returns:
-            Qwen response
+            LLM response
         """
-        messages = [
-            {"role": msg.role, "content": msg.content}
-            for msg in self._conversation_history
-        ]
+        if not self._client:
+            raise RuntimeError("LLM client not initialized")
 
-        payload = {
-            "model": self.config.model,
-            "messages": messages,
-            "max_tokens": self.config.max_tokens,
-            "temperature": self.config.temperature,
-            "stream": False,
-        }
+        messages = [msg.to_llm_message() for msg in self._conversation_history]
 
-        for attempt in range(self.config.retry_attempts):
-            try:
-                response = await self._mock_qwen_call(payload, correlation_context)
-                return response
-
-            except Exception as e:
-                if attempt == self.config.retry_attempts - 1:
-                    raise
-                await asyncio.sleep(0.5 * (2**attempt))
-
-        return {"content": "", "error": "Max retries exceeded"}
-
-    async def _mock_qwen_call(
-        self,
-        payload: dict[str, Any],
-        correlation_context: Optional[CorrelationContext],
-    ) -> dict[str, Any]:
-        """
-        Mock Qwen API call for demonstration.
-
-        In production, this would make actual HTTP requests.
-
-        Args:
-            payload: Request payload
-            correlation_context: Correlation tracking
-
-        Returns:
-            Mock response
-        """
-        await asyncio.sleep(0.1)
-
-        last_message = payload.get("messages", [])[-1]
-        content = last_message.get("content", "")
-
-        task_type = "analysis"
-        if "Task Type:" in content:
-            task_type = content.split("Task Type:")[1].split("\n")[0].strip()
-
-        mock_responses = {
-            "analysis": {
-                "content": json.dumps({
-                    "findings": ["Security analysis completed"],
-                    "risk_level": "medium",
-                    "recommendations": ["Review identified issues", "Implement recommended controls"],
-                }),
-                "usage": {"tokens": 100},
-            },
-            "threat_intelligence": {
-                "content": json.dumps({
-                    "threat_actors": ["Unknown"],
-                    "ttps": ["reconnaissance", "initial_access"],
-                    "confidence": 0.75,
-                }),
-                "usage": {"tokens": 80},
-            },
-            "decision_support": {
-                "content": json.dumps({
-                    "options": [
-                        {"action": "remediate", "confidence": 0.85},
-                        {"action": "monitor", "confidence": 0.60},
-                    ],
-                    "recommended": "remediate",
-                }),
-                "usage": {"tokens": 90},
-            },
-        }
-
-        return mock_responses.get(task_type, mock_responses["analysis"])
+        response = await self._client.complete(messages=messages)
+        return response
 
     def _parse_response(
         self,
-        response: dict[str, Any],
+        response: LLMResponse,
         input_data: dict[str, Any],
     ) -> dict[str, Any]:
         """
-        Parse Qwen response.
+        Parse LLM response.
 
         Args:
-            response: Raw Qwen response
+            response: Raw LLM response
             input_data: Original input data
 
         Returns:
             Parsed response dictionary
         """
-        content = response.get("content", "")
+        content = response.content
 
         try:
             parsed = json.loads(content)
             return {
                 "success": True,
                 "data": parsed,
-                "tokens_used": response.get("usage", {}).get("tokens", 0),
-                "model": self.config.model,
+                "tokens_used": response.total_tokens,
+                "model": response.model,
+                "provider": self.config.provider,
             }
         except json.JSONDecodeError:
             return {
                 "success": True,
                 "content": content,
-                "tokens_used": response.get("usage", {}).get("tokens", 0),
-                "model": self.config.model,
+                "tokens_used": response.total_tokens,
+                "model": response.model,
+                "provider": self.config.provider,
             }
 
     def clear_history(self) -> None:
@@ -327,6 +324,12 @@ class QwenSubAgent:
         """Get conversation history length."""
         return len(self._conversation_history)
 
+    def get_usage_stats(self) -> dict[str, Any]:
+        """Get usage statistics."""
+        if self._client:
+            return self._client.get_usage_summary()
+        return {}
+
 
 class QwenBridge:
     """
@@ -335,9 +338,7 @@ class QwenBridge:
     Manages multiple Qwen subagents and provides delegation
     capabilities for security tasks.
 
-    Attributes:
-        config: Bridge configuration
-        subagents: Registered subagents
+    Uses the unified LLM provider abstraction for multi-provider support.
     """
 
     def __init__(self, config: Optional[QwenBridgeConfig] = None) -> None:
@@ -352,13 +353,13 @@ class QwenBridge:
         self._is_connected = False
 
     async def connect(self) -> None:
-        """Connect bridge to Qwen service."""
+        """Connect bridge to LLM service."""
         for subagent in self._subagents.values():
             await subagent.connect()
         self._is_connected = True
 
     async def disconnect(self) -> None:
-        """Disconnect bridge from Qwen service."""
+        """Disconnect bridge from LLM service."""
         for subagent in self._subagents.values():
             await subagent.disconnect()
         self._is_connected = False
@@ -510,6 +511,25 @@ class QwenBridge:
             ],
         )
 
+    def get_total_usage(self) -> dict[str, Any]:
+        """Get total usage across all subagents."""
+        total_usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "request_count": 0,
+        }
+
+        for subagent in self._subagents.values():
+            stats = subagent.get_usage_stats()
+            usage = stats.get("usage", {})
+            total_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            total_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+            total_usage["total_tokens"] += usage.get("total_tokens", 0)
+            total_usage["request_count"] += usage.get("request_count", 0)
+
+        return total_usage
+
 
 class QwenAgentWrapper(BaseAgent):
     """
@@ -577,3 +597,66 @@ class QwenAgentWrapper(BaseAgent):
             context,
             correlation_context,
         )
+
+
+class LLMBridge(QwenBridge):
+    """
+    Unified LLM Bridge supporting multiple providers.
+
+    This is an alias for QwenBridge with support for any LLM provider.
+    QwenBridge is retained for backward compatibility.
+
+    Example usage:
+        bridge = LLMBridge(provider="openrouter", model="gpt-4")
+        bridge = LLMBridge(provider="ollama", model="qwen2.5:72b")
+        bridge = LLMBridge(provider="gemini", model="gemini-2.0-flash")
+    """
+
+    def __init__(
+        self,
+        provider: str = "ollama",
+        model: Optional[str] = None,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initialize LLM bridge with provider selection.
+
+        Args:
+            provider: Provider type (ollama, openrouter, gemini, chatgpt)
+            model: Model identifier
+            api_key: API key for provider
+            api_base: API base URL
+            **kwargs: Additional configuration
+        """
+        config = QwenBridgeConfig(
+            provider=provider,
+            model=model or self._get_default_model(provider),
+            api_key=api_key,
+            api_base=api_base or self._get_default_api_base(provider),
+            **kwargs,
+        )
+        super().__init__(config)
+
+    @staticmethod
+    def _get_default_model(provider: str) -> str:
+        """Get default model for provider."""
+        defaults = {
+            "ollama": "qwen2.5:72b",
+            "openrouter": "qwen/qwen-2.5-72b-instruct",
+            "gemini": "gemini-2.0-flash",
+            "chatgpt": "gpt-4o",
+        }
+        return defaults.get(provider, "qwen2.5:72b")
+
+    @staticmethod
+    def _get_default_api_base(provider: str) -> str:
+        """Get default API base for provider."""
+        defaults = {
+            "ollama": "http://localhost:11434",
+            "openrouter": "https://openrouter.ai/api/v1",
+            "gemini": "https://generativelanguage.googleapis.com/v1beta",
+            "chatgpt": "https://api.openai.com/v1",
+        }
+        return defaults.get(provider, "http://localhost:11434")

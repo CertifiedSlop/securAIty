@@ -1,7 +1,8 @@
 # Multi-Agent System Architecture
 
-**Version:** 2.0.0  
+**Version:** 2.0.0
 **Last Updated:** March 26, 2026
+**Author:** CertifiedSlop
 
 ## Overview
 
@@ -616,8 +617,12 @@ await agent.shutdown()
 
 ---
 
-## References
+&copy; 2026 CertifiedSlop. All rights reserved.
 
 - [OpenAPI Specification](../api/openapi.yaml) - API endpoint documentation
 - [Architecture Decision Records](../adr/) - Design decisions and rationale
 - [Security Runbooks](../runbooks/) - Operational procedures
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

@@ -1,5 +1,7 @@
 # Backup and Recovery Runbook
 
+**Author:** CertifiedSlop
+
 **Purpose**: Procedures for backing up and recovering securAIty platform components.
 
 **Audience**: DevOps engineers, system administrators, DR team
@@ -686,3 +688,7 @@ dr_test_schedule:
 **Maintained By**: securAIty DevOps Team  
 **Review Cycle**: Quarterly  
 **Next Review**: 2026-06-26
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

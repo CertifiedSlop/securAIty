@@ -120,6 +120,89 @@ class QwenConfig:
 
 
 @dataclass
+class LLMProviderConfig:
+    """
+    LLM provider configuration for multi-provider support.
+
+    Attributes:
+        provider: Provider type (ollama, openrouter, gemini, chatgpt)
+        model: Model identifier
+        api_key: API authentication key
+        api_base: Base URL for API endpoint
+        max_tokens: Maximum response tokens
+        temperature: Response temperature (0.0-2.0)
+        timeout: Request timeout in seconds
+        retry_attempts: Number of retry attempts
+        stream: Enable streaming responses
+    """
+
+    provider: str = "ollama"
+    model: str = "qwen2.5:72b"
+    api_key: Optional[str] = None
+    api_base: Optional[str] = None
+    max_tokens: int = 4096
+    temperature: float = 0.7
+    timeout: float = 60.0
+    retry_attempts: int = 3
+    stream: bool = False
+
+    @classmethod
+    def from_env(cls) -> "LLMProviderConfig":
+        """
+        Create configuration from environment variables.
+
+        Returns:
+            LLMProviderConfig instance
+        """
+        provider = os.environ.get("SECURAITY_LLM_PROVIDER", "ollama")
+        model = os.environ.get("SECURAITY_LLM_MODEL", cls._get_default_model(provider))
+        api_key = cls._get_api_key_from_env(provider)
+        api_base = os.environ.get("SECURAITY_LLM_API_BASE")
+        max_tokens = int(os.environ.get("SECURAITY_LLM_MAX_TOKENS", "4096"))
+        temperature = float(os.environ.get("SECURAITY_LLM_TEMPERATURE", "0.7"))
+        timeout = float(os.environ.get("SECURAITY_LLM_TIMEOUT", "60.0"))
+        retry_attempts = int(os.environ.get("SECURAITY_LLM_RETRY_ATTEMPTS", "3"))
+        stream = os.environ.get("SECURAITY_LLM_STREAM", "false").lower() == "true"
+
+        return cls(
+            provider=provider,
+            model=model,
+            api_key=api_key,
+            api_base=api_base,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            timeout=timeout,
+            retry_attempts=retry_attempts,
+            stream=stream,
+        )
+
+    @staticmethod
+    def _get_default_model(provider: str) -> str:
+        """Get default model for provider."""
+        defaults = {
+            "ollama": "qwen2.5:72b",
+            "openrouter": "qwen/qwen-2.5-72b-instruct",
+            "gemini": "gemini-2.0-flash",
+            "chatgpt": "gpt-4o",
+        }
+        return defaults.get(provider, "qwen2.5:72b")
+
+    @staticmethod
+    def _get_api_key_from_env(provider: str) -> Optional[str]:
+        """Get API key from environment based on provider."""
+        key_mapping = {
+            "ollama": None,
+            "openrouter": "OPENROUTER_API_KEY",
+            "gemini": "GEMINI_API_KEY",
+            "chatgpt": "OPENAI_API_KEY",
+        }
+        env_var = key_mapping.get(provider)
+        if env_var:
+            return os.environ.get(env_var)
+        return None
+
+
+@dataclass
 class StorageConfig:
     """
     Storage configuration.
@@ -168,6 +251,7 @@ class SecurAItyConfig:
         orchestrator: Orchestrator configuration
         policy: Policy configuration
         qwen: Qwen integration configuration
+        llm: LLM provider configuration
         storage: Storage configuration
         security: Security configuration
     """
@@ -179,6 +263,7 @@ class SecurAItyConfig:
     orchestrator: OrchestratorConfig = field(default_factory=OrchestratorConfig)
     policy: PolicyConfig = field(default_factory=PolicyConfig)
     qwen: QwenConfig = field(default_factory=QwenConfig)
+    llm: LLMProviderConfig = field(default_factory=LLMProviderConfig)
     storage: StorageConfig = field(default_factory=StorageConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
 
@@ -241,6 +326,15 @@ class SecurAItyConfig:
                 "audit_logging": self.security.audit_logging,
                 "api_key_header": self.security.api_key_header,
                 "cors_origins": self.security.cors_origins,
+            },
+            "llm": {
+                "provider": self.llm.provider,
+                "model": self.llm.model,
+                "api_base": self.llm.api_base,
+                "max_tokens": self.llm.max_tokens,
+                "temperature": self.llm.temperature,
+                "timeout": self.llm.timeout,
+                "stream": self.llm.stream,
             },
         }
 
@@ -404,6 +498,12 @@ class ConfigManager:
                 if hasattr(self.config.qwen, attr):
                     setattr(self.config.qwen, attr, value)
 
+        elif parts[0] == "llm":
+            if len(parts) > 1:
+                attr = "_".join(parts[1:])
+                if hasattr(self.config.llm, attr):
+                    setattr(self.config.llm, attr, value)
+
         elif parts[0] == "storage":
             if len(parts) > 1:
                 attr = "_".join(parts[1:])
@@ -455,6 +555,10 @@ class ConfigManager:
     def get_qwen_config(self) -> QwenConfig:
         """Get Qwen configuration."""
         return self.config.qwen
+
+    def get_llm_config(self) -> LLMProviderConfig:
+        """Get LLM provider configuration."""
+        return self.config.llm
 
     def get_policy_config(self) -> PolicyConfig:
         """Get policy configuration."""

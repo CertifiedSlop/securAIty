@@ -1,5 +1,7 @@
 # ADR-001: Event-Driven Architecture with NATS
 
+**Author:** CertifiedSlop
+
 **Date**: 2026-03-26  
 **Status**: Accepted  
 **Authors**: securAIty Team  
@@ -207,3 +209,7 @@ nats_jetstream_consumer_ack_floor
 ---
 
 **Last Updated**: March 26, 2026
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

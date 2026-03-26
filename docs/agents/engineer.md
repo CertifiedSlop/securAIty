@@ -1,5 +1,7 @@
 # Security Engineer Agent
 
+**Author:** CertifiedSlop
+
 **Agent Type:** `engineer`  
 **Version:** 2.0.0  
 **Status:** Production Ready
@@ -971,3 +973,7 @@ engineer:
 - Basic remediation capabilities
 - Patch management
 - Control configuration
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

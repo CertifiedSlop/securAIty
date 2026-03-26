@@ -1,5 +1,7 @@
 # API Schemas
 
+**Author:** CertifiedSlop
+
 Complete reference for all Pydantic schemas used in securAIty API requests and responses.
 
 ## Schema Conventions
@@ -817,3 +819,7 @@ Readiness check response.
 - [API Overview](overview.md) - Architecture and authentication
 - [Endpoints Reference](endpoints.md) - Complete endpoint documentation
 - [Authentication Guide](authentication.md) - JWT and RBAC details
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

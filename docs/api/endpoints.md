@@ -1,5 +1,7 @@
 # API Endpoints
 
+**Author:** CertifiedSlop
+
 Complete reference for all securAIty API endpoints.
 
 ## Base URL
@@ -1335,3 +1337,7 @@ print(f"Task ID: {result['task_id']}")
 - [API Overview](overview.md) - Architecture, authentication, error handling
 - [Schemas Reference](schemas.md) - Request/response schema definitions
 - [Authentication Guide](authentication.md) - JWT and RBAC details
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

@@ -2,6 +2,9 @@
 
 The securAIty REST API provides programmatic access to security event management, incident response, and agent orchestration capabilities.
 
+**Author:** CertifiedSlop
+**Last Updated:** March 26, 2026
+
 ## Base URL
 
 ```
@@ -342,3 +345,7 @@ Non-breaking changes (new optional fields, new endpoints) do not require version
 - [Endpoints Reference](endpoints.md) - Complete endpoint documentation
 - [Schemas Reference](schemas.md) - Request/response schema definitions
 - [Authentication Guide](authentication.md) - JWT and RBAC details
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

@@ -1,5 +1,7 @@
 # ADR-004: Storage Pattern with Repository Abstraction
 
+**Author:** CertifiedSlop
+
 ## Status
 
 Accepted
@@ -534,3 +536,7 @@ SELECT cron.schedule(
 - [ADR-001: Event-Driven Architecture](001-event-driven-architecture.md)
 - [ADR-003: Security Model](003-security-model.md)
 - [ADR-005: Python Async Design](005-python-async-design.md)
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

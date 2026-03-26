@@ -1,5 +1,7 @@
 # ADR-003: SQLAlchemy 2.0 with Repository Pattern
 
+**Author:** CertifiedSlop
+
 **Date**: 2026-03-26  
 **Status**: Accepted  
 **Authors**: securAIty Team  
@@ -600,3 +602,7 @@ stmt = select(EventModel).offset(offset).limit(limit)
 ---
 
 **Last Updated**: March 26, 2026
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

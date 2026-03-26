@@ -17,8 +17,10 @@ We take the security of securAIty seriously. If you believe you have found a sec
 
 Instead, please report them via:
 
-- **Email**: security@securAIty.local (if configured)
 - **GitHub Security Advisories**: Use the "Report a vulnerability" feature in the Security tab
+  - Navigate to: https://github.com/CertifiedSlop/securAIty/security/advisories
+  - Click "Report a vulnerability"
+  - Provide detailed information about the vulnerability
 
 ### What to Include
 
@@ -117,8 +119,12 @@ Security updates are announced through:
 
 ## Contact
 
-For security-related questions not covered by vulnerability reports, please open a regular GitHub issue with the "security" label.
+For security-related questions not covered by vulnerability reports, please open a GitHub Discussion or issue with the "security" label.
 
 ---
 
 **Last Updated**: March 26, 2026
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

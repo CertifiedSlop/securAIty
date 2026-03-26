@@ -1,5 +1,7 @@
 # ADR-002: Multi-Agent Security Orchestration
 
+**Author:** CertifiedSlop
+
 **Date**: 2026-03-26  
 **Status**: Accepted  
 **Authors**: securAIty Team  
@@ -415,3 +417,7 @@ workflow_state = await orchestrator.execute_workflow(
 ---
 
 **Last Updated**: March 26, 2026
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.

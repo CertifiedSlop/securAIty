@@ -1,5 +1,7 @@
 # Monitoring Runbook
 
+**Author:** CertifiedSlop
+
 **Purpose**: Observability setup for securAIty platform including metrics, logs, and alerting.
 
 **Audience**: SRE team, DevOps engineers, on-call engineers
@@ -669,3 +671,7 @@ docker compose logs vault | tail -50
 
 **Document Version**: 1.0  
 **Maintained By**: securAIty SRE Team
+
+---
+
+&copy; 2026 CertifiedSlop. All rights reserved.
