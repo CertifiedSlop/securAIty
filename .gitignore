@@ -147,7 +147,6 @@ logs/
 .tmp/
 vault-data/
 nats-data/
-secrets/*.txt
 
 # Rust
 /target/
